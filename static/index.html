@@ -594,7 +594,12 @@ async function loadCampagnes() {
     <div class="card">
       <div class="card-title">
         <span>${c.nom} ${badgeCampagneStatut(c.statut)}</span>
-        ${c.statut === "brouillon" ? `<button class="btn btn-sm btn-primary" onclick="lancerCampagne(${c.id})"><i class="ti ti-player-play"></i>Lancer</button>` : ""}
+        <div style="display:flex;gap:8px">
+          ${c.statut === "brouillon" ? `
+            <button class="btn btn-sm btn-primary" onclick="lancerCampagne(${c.id})"><i class="ti ti-mail"></i>Lancer par email</button>
+            <button class="btn btn-sm" style="border-color:rgba(34,197,94,.3);color:var(--green)" onclick="lancerCampagneWhatsapp(${c.id})"><i class="ti ti-brand-whatsapp"></i>Lancer par WhatsApp</button>
+          ` : ""}
+        </div>
       </div>
       <div style="display:flex;gap:24px;font-size:13px;color:var(--muted)">
         <span><i class="ti ti-briefcase" style="margin-right:4px"></i>${c.metier}</span>
@@ -604,6 +609,23 @@ async function loadCampagnes() {
       </div>
     </div>
   `).join("");
+}
+
+async function lancerCampagneWhatsapp(id) {
+  if (!confirm("Lancer cette campagne par WhatsApp ? Les templates J0 seront envoyés immédiatement.\n\n⚠️ Si vous êtes encore en mode test Meta, seuls les numéros enregistrés dans la liste de test recevront le message.")) return;
+  try {
+    const res = await fetch(API + `/api/campagnes/${id}/lancer-whatsapp`, { method: "POST" });
+    const d = await res.json();
+    if (d.detail_erreurs && d.detail_erreurs.length) {
+      showToast(`${d.envoyes} envoyés, ${d.echecs} échecs — voir console pour détails`, d.echecs > 0 ? "error" : "success");
+      console.log("Erreurs WhatsApp:", d.detail_erreurs);
+    } else {
+      showToast(`Campagne WhatsApp lancée : ${d.envoyes} messages envoyés`);
+    }
+    loadCampagnes();
+  } catch (e) {
+    showToast("Erreur lancement campagne WhatsApp", "error");
+  }
 }
 
 async function lancerCampagne(id) {
