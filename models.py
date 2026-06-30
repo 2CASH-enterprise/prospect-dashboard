@@ -30,7 +30,7 @@ class Prospect(Base):
     note = Column(Float)
     nb_avis = Column(Integer)
     google_maps_url = Column(String)
-    place_id = Column(String, unique=True, index=True)
+    place_id = Column(String, unique=True, index=True, nullable=True)
 
     statut = Column(String, default="nouveau")
     # nouveau | en_campagne | repondu | converti | desinscrit | injoignable
