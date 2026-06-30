@@ -458,7 +458,7 @@ async function loadProspects() {
   document.getElementById("prospects-table-wrap").innerHTML = `
     <table>
       <thead><tr>
-        <th>Nom</th><th>Métier</th><th>Ville</th><th>Email</th><th>Téléphone</th><th>WhatsApp</th><th>Note</th><th>Statut</th><th></th>
+        <th>Nom</th><th>Métier</th><th>Ville</th><th>Email</th><th>Téléphone</th><th>WhatsApp</th><th>Site web</th><th>Note</th><th>Statut</th><th></th>
       </tr></thead>
       <tbody>
         ${prospects.map(p => `
@@ -469,6 +469,7 @@ async function loadProspects() {
             <td>${p.email || "—"}</td>
             <td>${p.telephone || "—"}</td>
             <td>${p.whatsapp || "—"}</td>
+            <td>${p.site_web ? `<a href="${p.site_web}" target="_blank" style="color:var(--violet2)"><i class="ti ti-external-link"></i></a>` : "—"}</td>
             <td>${p.note ? "★ " + p.note : "—"}</td>
             <td>${badgeStatut(p.statut)}</td>
             <td><i class="ti ti-trash" style="cursor:pointer;color:var(--faint)" onclick="supprimerProspect(${p.id})"></i></td>
