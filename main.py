@@ -101,15 +101,29 @@ def liste_villes(metier: Optional[str] = None, db: Session = Depends(get_db)):
     return [{"ville": v, "total": c} for v, c in rows]
 
 
+def get_field(row: dict, *keys):
+    """Retourne la première valeur non vide trouvée parmi plusieurs noms de colonnes possibles."""
+    for k in keys:
+        val = row.get(k)
+        if val:
+            return val.strip() if isinstance(val, str) else val
+    return ""
+
+
 @app.post("/api/prospects/import")
 async def importer_csv(
     metier: str,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    """Importe un CSV (issu du scraper ou d'Apify) et l'associe à un métier."""
+    """
+    Importe un CSV et l'associe à un métier.
+    Reconnaît automatiquement plusieurs formats :
+    - Format simplifié (scraper.py maison) : nom, adresse, telephone, email, site_web, whatsapp, note, nb_avis, ville, place_id
+    - Format Apify brut (Google Maps Scraper) : title, address, phoneUnformatted, website, totalScore, reviewsCount, city, placeId
+    """
     contenu = await file.read()
-    texte = contenu.decode("utf-8")
+    texte = contenu.decode("utf-8-sig")  # utf-8-sig gère le BOM Excel/Apify
     reader = csv.DictReader(io.StringIO(texte))
 
     nb_importes = 0
@@ -117,10 +131,10 @@ async def importer_csv(
     nb_erreurs = 0
     erreurs_detail = []
 
-    for i, row in enumerate(reader, start=2):  # ligne 2 = première ligne de données
+    for i, row in enumerate(reader, start=2):
         try:
-            place_id = (row.get("place_id") or "").strip()
-            nom = (row.get("nom") or row.get("name") or row.get("title") or "").strip()
+            place_id = get_field(row, "place_id", "placeId", "fid", "cid")
+            nom = get_field(row, "nom", "name", "title")
 
             if not nom:
                 nb_erreurs += 1
@@ -133,20 +147,23 @@ async def importer_csv(
                     nb_doublons += 1
                     continue
             else:
-                place_id = None  # NULL plutôt que '' pour éviter les collisions d'unicité
+                place_id = None
+
+            note_raw = get_field(row, "note", "totalScore", "rating")
+            nb_avis_raw = get_field(row, "nb_avis", "reviewsCount", "user_ratings_total")
 
             prospect = Prospect(
                 nom=nom,
                 metier=metier,
-                ville=row.get("ville", ""),
-                adresse=row.get("adresse") or row.get("address", ""),
-                telephone=row.get("telephone") or row.get("phone", ""),
-                whatsapp=row.get("whatsapp", ""),
-                email=row.get("email", ""),
-                site_web=row.get("site_web") or row.get("website", ""),
-                note=float(row["note"]) if row.get("note") else None,
-                nb_avis=int(row["nb_avis"]) if row.get("nb_avis") else None,
-                google_maps_url=row.get("google_maps", ""),
+                ville=get_field(row, "ville", "city"),
+                adresse=get_field(row, "adresse", "address"),
+                telephone=get_field(row, "telephone", "phone", "phoneUnformatted"),
+                whatsapp=get_field(row, "whatsapp"),
+                email=get_field(row, "email"),
+                site_web=get_field(row, "site_web", "website"),
+                note=float(note_raw) if note_raw else None,
+                nb_avis=int(float(nb_avis_raw)) if nb_avis_raw else None,
+                google_maps_url=get_field(row, "google_maps", "url"),
                 place_id=place_id,
             )
             db.add(prospect)
