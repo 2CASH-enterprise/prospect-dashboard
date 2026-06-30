@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Prospection — Agen'C AI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0A0A0F;--bg-card:#111118;--bg-card2:#16161F;
+  --border:#1E1B2E;--border2:#2A2740;
+  --violet:#7C3AED;--violet2:#A78BFA;
+  --text:#F8FAFC;--muted:#94A3B8;--faint:#475569;
+  --green:#22C55E;--amber:#F59E0B;--red:#EF4444;--cyan:#22D3EE;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{background:var(--bg-card);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:4px}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--violet2);padding:0 12px 24px;letter-spacing:-.01em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--muted);font-size:13.5px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;text-decoration:none}
+.nav-item:hover{background:var(--bg-card2);color:var(--text)}
+.nav-item.active{background:rgba(124,58,237,.12);color:var(--violet2)}
+.nav-item i{font-size:18px}
+
+/* MAIN */
+.main{padding:32px 40px;overflow-y:auto}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.page-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--text);transition:background .15s,border-color .15s}
+.btn:hover{background:var(--bg-card2)}
+.btn-primary{background:var(--violet);border-color:var(--violet);color:#fff}
+.btn-primary:hover{background:#6D28D9}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-danger{border-color:rgba(239,68,68,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.08)}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.stat-label{font-size:11px;color:var(--faint);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.02em}
+.stat-val.violet{color:var(--violet2)}
+.stat-val.green{color:var(--green)}
+.stat-val.amber{color:var(--amber)}
+
+/* CARDS / SECTIONS */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;color:var(--faint);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace}
+td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--muted)}
+td.strong{color:var(--text);font-weight:500}
+tr:hover td{background:rgba(124,58,237,.03)}
+
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:100px;font-family:'JetBrains Mono',monospace}
+.b-nouveau{background:rgba(148,163,184,.1);color:var(--muted);border:1px solid rgba(148,163,184,.2)}
+.b-campagne{background:rgba(124,58,237,.1);color:var(--violet2);border:1px solid rgba(124,58,237,.2)}
+.b-repondu{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.b-converti{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.b-desinscrit{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.b-active{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.b-brouillon{background:rgba(148,163,184,.1);color:var(--muted);border:1px solid rgba(148,163,184,.2)}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+select,input[type=text],input[type=file]{background:var(--bg-card2);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px;font-family:'Inter',sans-serif}
+select{cursor:pointer}
+
+/* FORM */
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:6px;display:block;font-weight:500}
+.form-group input[type=text],.form-group textarea,.form-group select{width:100%}
+textarea{background:var(--bg-card2);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:7px;font-size:13px;font-family:'Inter',sans-serif;resize:vertical;min-height:90px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.helper{font-size:11px;color:var(--faint);margin-top:4px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab.active{color:var(--violet2);border-color:var(--violet)}
+
+.empty{text-align:center;padding:48px 20px;color:var(--faint);font-size:13px}
+.empty i{font-size:32px;display:block;margin-bottom:12px;opacity:.4}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-card);border:1px solid var(--border2);border-radius:14px;padding:28px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:var(--faint);font-size:18px}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg-card2);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:13px;z-index:300;display:none;align-items:center;gap:8px}
+.toast.show{display:flex}
+.toast.success{border-color:rgba(34,197,94,.3);color:var(--green)}
+.toast.error{border-color:rgba(239,68,68,.3);color:var(--red)}
+
+.progress-bar{height:6px;background:var(--border2);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:var(--violet);transition:width .3s}
+
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">AGEN'C AI</div>
+    <div class="nav-item active" data-page="prospects"><i class="ti ti-users"></i>Prospects</div>
+    <div class="nav-item" data-page="scraper"><i class="ti ti-search"></i>Scraper</div>
+    <div class="nav-item" data-page="campagnes"><i class="ti ti-send"></i>Campagnes</div>
+    <div class="nav-item" data-page="stats"><i class="ti ti-chart-bar"></i>Conversion</div>
+  </div>
+
+  <div class="main">
+
+    <!-- ================= PROSPECTS ================= -->
+    <div id="page-prospects">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Prospects</div>
+          <div class="page-sub">Base de contacts collectés, tous métiers confondus</div>
+        </div>
+        <button class="btn btn-primary" onclick="openImportModal()"><i class="ti ti-upload"></i>Importer un CSV</button>
+      </div>
+
+      <div class="stats-row" id="global-stats"></div>
+
+      <div class="filters">
+        <select id="filter-metier" onchange="loadProspects()"><option value="">Tous les métiers</option></select>
+        <select id="filter-ville" onchange="loadProspects()"><option value="">Toutes les villes</option></select>
+        <select id="filter-statut" onchange="loadProspects()">
+          <option value="">Tous les statuts</option>
+          <option value="nouveau">Nouveau</option>
+          <option value="en_campagne">En campagne</option>
+          <option value="repondu">Répondu</option>
+          <option value="converti">Converti</option>
+          <option value="desinscrit">Désinscrit</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer">
+          <input type="checkbox" id="filter-email" onchange="loadProspects()"> Avec email uniquement
+        </label>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span id="prospects-count">Contacts</span>
+        </div>
+        <div id="prospects-table-wrap"></div>
+      </div>
+    </div>
+
+    <!-- ================= SCRAPER ================= -->
+    <div id="page-scraper" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Scraper</div>
+          <div class="page-sub">Lancez une recherche Google Places ou importez un export existant</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Lancer une recherche</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Métier</label>
+            <select id="scraper-profession">
+              <option value="coiffeurs">Coiffeurs</option>
+              <option value="avocats">Avocats</option>
+              <option value="restaurants">Restaurants</option>
+              <option value="agences_immo">Agences immobilières</option>
+              <option value="dentistes">Dentistes</option>
+              <option value="kinés">Kinésithérapeutes</option>
+              <option value="garages">Garages automobiles</option>
+              <option value="fleuristes">Fleuristes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Limiter le nombre de villes (optionnel, pour tester)</label>
+            <input type="text" id="scraper-limit" placeholder="ex: 3">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="lancerScraper()"><i class="ti ti-player-play"></i>Lancer le scraping</button>
+        <p class="helper" style="margin-top:10px">Le scraping tourne en arrière-plan sur le VPS. Les résultats apparaîtront ci-dessous une fois terminés.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Exports disponibles
+          <button class="btn btn-sm" onclick="rafraichirExports()"><i class="ti ti-refresh"></i>Actualiser</button>
+        </div>
+        <div id="exports-list"></div>
+      </div>
+    </div>
+
+    <!-- ================= CAMPAGNES ================= -->
+    <div id="page-campagnes" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Campagnes</div>
+          <div class="page-sub">Séquences automatisées J0 / J3 / J5</div>
+        </div>
+        <button class="btn btn-primary" onclick="openCampagneModal()"><i class="ti ti-plus"></i>Nouvelle campagne</button>
+      </div>
+
+      <div id="campagnes-list"></div>
+    </div>
+
+    <!-- ================= STATS / CONVERSION ================= -->
+    <div id="page-stats" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Conversion</div>
+          <div class="page-sub">Performance des campagnes en cours</div>
+        </div>
+      </div>
+      <div id="stats-detail"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal">
+    <div class="modal-title">Importer un CSV<span class="modal-close" onclick="closeModal('modal-import')"><i class="ti ti-x"></i></span></div>
+    <div class="form-group">
+      <label class="form-label">Métier concerné</label>
+      <select id="import-metier">
+        <option value="coiffeurs">Coiffeurs</option>
+        <option value="avocats">Avocats</option>
+        <option value="restaurants">Restaurants</option>
+        <option value="agences_immo">Agences immobilières</option>
+        <option value="dentistes">Dentistes</option>
+        <option value="kinés">Kinésithérapeutes</option>
+        <option value="garages">Garages automobiles</option>
+        <option value="fleuristes">Fleuristes</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Fichier CSV</label>
+      <input type="file" id="import-file" accept=".csv">
+      <p class="helper">Colonnes attendues : nom, adresse, telephone, email, site_web, whatsapp, note, nb_avis, ville, place_id</p>
+    </div>
+    <button class="btn btn-primary" onclick="importerCSV()" style="width:100%;justify-content:center"><i class="ti ti-upload"></i>Importer</button>
+  </div>
+</div>
+
+<!-- MODAL CAMPAGNE -->
+<div class="modal-overlay" id="modal-campagne">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-title">Nouvelle campagne<span class="modal-close" onclick="closeModal('modal-campagne')"><i class="ti ti-x"></i></span></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nom de la campagne</label>
+        <input type="text" id="camp-nom" placeholder="Coiffeurs Paris - Juin 2026">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Métier ciblé</label>
+        <select id="camp-metier">
+          <option value="coiffeurs">Coiffeurs</option>
+          <option value="avocats">Avocats</option>
+          <option value="restaurants">Restaurants</option>
+          <option value="agences_immo">Agences immobilières</option>
+          <option value="dentistes">Dentistes</option>
+          <option value="kinés">Kinésithérapeutes</option>
+          <option value="garages">Garages automobiles</option>
+          <option value="fleuristes">Fleuristes</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ville (optionnel, laisser vide pour cibler toutes les villes)</label>
+      <input type="text" id="camp-ville" placeholder="Paris, France">
+    </div>
+
+    <div class="tabs" style="margin-top:8px">
+      <div class="tab active" data-etape="j0">Email J0</div>
+      <div class="tab" data-etape="j3">Email J3 (relance)</div>
+      <div class="tab" data-etape="j5">Email J5 (dernière relance)</div>
+    </div>
+
+    <div class="etape-content" id="etape-j0">
+      <div class="form-group">
+        <label class="form-label">Sujet</label>
+        <input type="text" id="camp-sujet-j0" placeholder="{{nom}}, une idée pour gagner du temps">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Corps du message</label>
+        <textarea id="camp-corps-j0" placeholder="Bonjour {{nom}},&#10;&#10;J'ai remarqué votre salon à {{ville}}...">Bonjour {{nom}},
+
+J'ai remarqué votre activité à {{ville}} et je voulais vous présenter un outil qui pourrait vous faire gagner plusieurs heures par semaine sur la gestion de vos rendez-vous et de votre communication.
+
+Auriez-vous 15 minutes pour une démo rapide cette semaine ?
+
+Cordialement</textarea>
+      </div>
+    </div>
+
+    <div class="etape-content" id="etape-j3" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Sujet</label>
+        <input type="text" id="camp-sujet-j3" placeholder="Relance — {{nom}}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Corps du message</label>
+        <textarea id="camp-corps-j3">Bonjour {{nom}},
+
+Je me permets de revenir vers vous suite à mon précédent message.
+
+Si le sujet vous intéresse, je reste disponible pour une démo rapide de 15 minutes, sans engagement.
+
+Cordialement</textarea>
+      </div>
+    </div>
+
+    <div class="etape-content" id="etape-j5" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Sujet</label>
+        <input type="text" id="camp-sujet-j5" placeholder="Dernier message — {{nom}}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Corps du message</label>
+        <textarea id="camp-corps-j5">Bonjour {{nom}},
+
+Je n'ai pas eu de retour de votre part, donc je clôture le sujet de mon côté.
+
+Si vous changez d'avis, n'hésitez pas à me recontacter directement.
+
+Bonne continuation</textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="creerCampagne()" style="width:100%;justify-content:center;margin-top:8px"><i class="ti ti-check"></i>Créer la campagne</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "";
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+document.querySelectorAll(".nav-item").forEach(item => {
+  item.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+    item.classList.add("active");
+    const page = item.dataset.page;
+    document.querySelectorAll("[id^=page-]").forEach(p => p.style.display = "none");
+    document.getElementById("page-" + page).style.display = "block";
+    if (page === "prospects") loadProspects();
+    if (page === "scraper") rafraichirExports();
+    if (page === "campagnes") loadCampagnes();
+    if (page === "stats") loadStatsDetail();
+  });
+});
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    document.querySelectorAll(".etape-content").forEach(c => c.style.display = "none");
+    document.getElementById("etape-" + tab.dataset.etape).style.display = "block";
+  });
+});
+
+function showToast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => t.classList.remove("show"), 3500);
+}
+
+function openModal(id) { document.getElementById(id).classList.add("open"); }
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+function openImportModal() { openModal("modal-import"); }
+function openCampagneModal() { openModal("modal-campagne"); }
+
+// ============================================================
+// PROSPECTS
+// ============================================================
+async function loadGlobalStats() {
+  const res = await fetch(API + "/api/stats/globales");
+  const d = await res.json();
+  document.getElementById("global-stats").innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total prospects</div><div class="stat-val">${d.total_prospects}</div></div>
+    <div class="stat-card"><div class="stat-label">Avec email</div><div class="stat-val violet">${d.total_avec_email}</div></div>
+    <div class="stat-card"><div class="stat-label">Campagnes</div><div class="stat-val">${d.total_campagnes}</div></div>
+    <div class="stat-card"><div class="stat-label">Campagnes actives</div><div class="stat-val green">${d.campagnes_actives}</div></div>
+    <div class="stat-card"><div class="stat-label">Convertis</div><div class="stat-val amber">${d.total_convertis}</div></div>
+  `;
+}
+
+async function loadFiltersOptions() {
+  const res = await fetch(API + "/api/prospects/metiers");
+  const metiers = await res.json();
+  const sel = document.getElementById("filter-metier");
+  sel.innerHTML = '<option value="">Tous les métiers</option>' +
+    metiers.map(m => `<option value="${m.metier}">${m.metier} (${m.total})</option>`).join("");
+
+  const sel2 = document.getElementById("camp-metier");
+  if (metiers.length && sel2) {
+    // garde les options statiques, ne touche pas
+  }
+
+  const resV = await fetch(API + "/api/prospects/villes");
+  const villes = await resV.json();
+  const selV = document.getElementById("filter-ville");
+  selV.innerHTML = '<option value="">Toutes les villes</option>' +
+    villes.map(v => `<option value="${v.ville}">${v.ville} (${v.total})</option>`).join("");
+}
+
+function badgeStatut(statut) {
+  const map = {
+    nouveau: "Nouveau", en_campagne: "En campagne", repondu: "Répondu",
+    converti: "Converti", desinscrit: "Désinscrit", injoignable: "Injoignable"
+  };
+  return `<span class="badge b-${statut}">${map[statut] || statut}</span>`;
+}
+
+async function loadProspects() {
+  const metier = document.getElementById("filter-metier").value;
+  const ville = document.getElementById("filter-ville").value;
+  const statut = document.getElementById("filter-statut").value;
+  const avecEmail = document.getElementById("filter-email").checked;
+
+  const params = new URLSearchParams();
+  if (metier) params.append("metier", metier);
+  if (ville) params.append("ville", ville);
+  if (statut) params.append("statut", statut);
+  if (avecEmail) params.append("avec_email_uniquement", "true");
+
+  const res = await fetch(API + "/api/prospects?" + params.toString());
+  const prospects = await res.json();
+
+  document.getElementById("prospects-count").textContent = `${prospects.length} contact${prospects.length > 1 ? "s" : ""}`;
+
+  if (!prospects.length) {
+    document.getElementById("prospects-table-wrap").innerHTML = `
+      <div class="empty"><i class="ti ti-users-group"></i>Aucun prospect pour ces filtres.<br>Importez un CSV pour commencer.</div>`;
+    return;
+  }
+
+  document.getElementById("prospects-table-wrap").innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Nom</th><th>Métier</th><th>Ville</th><th>Email</th><th>Téléphone</th><th>WhatsApp</th><th>Note</th><th>Statut</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${prospects.map(p => `
+          <tr>
+            <td class="strong">${p.nom || "—"}</td>
+            <td>${p.metier || "—"}</td>
+            <td>${p.ville || "—"}</td>
+            <td>${p.email || "—"}</td>
+            <td>${p.telephone || "—"}</td>
+            <td>${p.whatsapp || "—"}</td>
+            <td>${p.note ? "★ " + p.note : "—"}</td>
+            <td>${badgeStatut(p.statut)}</td>
+            <td><i class="ti ti-trash" style="cursor:pointer;color:var(--faint)" onclick="supprimerProspect(${p.id})"></i></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+async function supprimerProspect(id) {
+  if (!confirm("Supprimer ce prospect ?")) return;
+  await fetch(API + `/api/prospects/${id}`, { method: "DELETE" });
+  loadProspects();
+  loadGlobalStats();
+  showToast("Prospect supprimé");
+}
+
+async function importerCSV() {
+  const metier = document.getElementById("import-metier").value;
+  const fileInput = document.getElementById("import-file");
+  if (!fileInput.files.length) { showToast("Sélectionnez un fichier", "error"); return; }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  try {
+    const res = await fetch(API + `/api/prospects/import?metier=${metier}`, { method: "POST", body: formData });
+    const d = await res.json();
+    showToast(`${d.importes} prospects importés (${d.doublons_ignores} doublons ignorés)`);
+    closeModal("modal-import");
+    loadProspects();
+    loadGlobalStats();
+    loadFiltersOptions();
+  } catch (e) {
+    showToast("Erreur lors de l'import", "error");
+  }
+}
+
+// ============================================================
+// SCRAPER
+// ============================================================
+async function lancerScraper() {
+  const profession = document.getElementById("scraper-profession").value;
+  const limit = document.getElementById("scraper-limit").value;
+
+  const params = new URLSearchParams({ profession });
+  if (limit) params.append("limit_villes", limit);
+
+  try {
+    const res = await fetch(API + "/api/scraper/lancer?" + params.toString(), { method: "POST" });
+    const d = await res.json();
+    showToast("Scraping lancé en arrière-plan — revenez dans quelques minutes");
+  } catch (e) {
+    showToast("Erreur lancement scraper", "error");
+  }
+}
+
+async function rafraichirExports() {
+  try {
+    const res = await fetch(API + "/api/scraper/resultats");
+    const fichiers = await res.json();
+    const el = document.getElementById("exports-list");
+    if (!fichiers.length) {
+      el.innerHTML = `<div class="empty"><i class="ti ti-file-off"></i>Aucun export disponible pour l'instant.</div>`;
+      return;
+    }
+    el.innerHTML = fichiers.map(f => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--muted)">${f}</span>
+        <span class="helper">Importez-le manuellement via "Importer un CSV"</span>
+      </div>
+    `).join("");
+  } catch (e) {
+    document.getElementById("exports-list").innerHTML = `<div class="empty">Impossible de joindre le dossier d'exports.</div>`;
+  }
+}
+
+// ============================================================
+// CAMPAGNES
+// ============================================================
+async function creerCampagne() {
+  const params = new URLSearchParams({
+    nom: document.getElementById("camp-nom").value,
+    metier: document.getElementById("camp-metier").value,
+    ville_filtre: document.getElementById("camp-ville").value,
+    sujet_j0: document.getElementById("camp-sujet-j0").value,
+    corps_j0: document.getElementById("camp-corps-j0").value,
+    sujet_j3: document.getElementById("camp-sujet-j3").value,
+    corps_j3: document.getElementById("camp-corps-j3").value,
+    sujet_j5: document.getElementById("camp-sujet-j5").value,
+    corps_j5: document.getElementById("camp-corps-j5").value,
+  });
+
+  try {
+    const res = await fetch(API + "/api/campagnes?" + params.toString(), { method: "POST" });
+    const d = await res.json();
+    showToast("Campagne créée");
+    closeModal("modal-campagne");
+    loadCampagnes();
+  } catch (e) {
+    showToast("Erreur création campagne", "error");
+  }
+}
+
+function badgeCampagneStatut(statut) {
+  const map = { brouillon: "Brouillon", active: "Active", terminee: "Terminée", pause: "En pause" };
+  return `<span class="badge b-${statut === "active" ? "active" : "brouillon"}">${map[statut] || statut}</span>`;
+}
+
+async function loadCampagnes() {
+  const res = await fetch(API + "/api/campagnes");
+  const campagnes = await res.json();
+  const el = document.getElementById("campagnes-list");
+
+  if (!campagnes.length) {
+    el.innerHTML = `<div class="card"><div class="empty"><i class="ti ti-send-off"></i>Aucune campagne créée pour l'instant.</div></div>`;
+    return;
+  }
+
+  el.innerHTML = campagnes.map(c => `
+    <div class="card">
+      <div class="card-title">
+        <span>${c.nom} ${badgeCampagneStatut(c.statut)}</span>
+        ${c.statut === "brouillon" ? `<button class="btn btn-sm btn-primary" onclick="lancerCampagne(${c.id})"><i class="ti ti-player-play"></i>Lancer</button>` : ""}
+      </div>
+      <div style="display:flex;gap:24px;font-size:13px;color:var(--muted)">
+        <span><i class="ti ti-briefcase" style="margin-right:4px"></i>${c.metier}</span>
+        ${c.ville_filtre ? `<span><i class="ti ti-map-pin" style="margin-right:4px"></i>${c.ville_filtre}</span>` : `<span><i class="ti ti-map-pin" style="margin-right:4px"></i>Toutes villes</span>`}
+        <span><i class="ti ti-users" style="margin-right:4px"></i>${c.nb_prospects} prospects</span>
+        <span><i class="ti ti-message-circle" style="margin-right:4px"></i>${c.nb_repondus} réponses</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function lancerCampagne(id) {
+  if (!confirm("Lancer cette campagne ? Les emails J0 seront envoyés immédiatement à tous les prospects correspondants.")) return;
+  try {
+    const res = await fetch(API + `/api/campagnes/${id}/lancer`, { method: "POST" });
+    const d = await res.json();
+    showToast(`Campagne lancée : ${d.envoyes} emails envoyés, ${d.echecs} échecs`);
+    loadCampagnes();
+  } catch (e) {
+    showToast("Erreur lancement campagne", "error");
+  }
+}
+
+// ============================================================
+// STATS DÉTAILLÉES
+// ============================================================
+async function loadStatsDetail() {
+  const res = await fetch(API + "/api/campagnes");
+  const campagnes = await res.json();
+  const el = document.getElementById("stats-detail");
+
+  if (!campagnes.length) {
+    el.innerHTML = `<div class="card"><div class="empty"><i class="ti ti-chart-bar-off"></i>Aucune campagne à analyser.</div></div>`;
+    return;
+  }
+
+  let html = "";
+  for (const c of campagnes) {
+    const statRes = await fetch(API + `/api/campagnes/${c.id}/stats`);
+    const s = await statRes.json();
+    html += `
+      <div class="card">
+        <div class="card-title">${c.nom}</div>
+        <div class="stats-row" style="grid-template-columns:repeat(5,1fr)">
+          <div class="stat-card"><div class="stat-label">J0 envoyés</div><div class="stat-val">${s.j0_envoyes}</div></div>
+          <div class="stat-card"><div class="stat-label">J3 envoyés</div><div class="stat-val">${s.j3_envoyes}</div></div>
+          <div class="stat-card"><div class="stat-label">J5 envoyés</div><div class="stat-val">${s.j5_envoyes}</div></div>
+          <div class="stat-card"><div class="stat-label">Taux d'ouverture</div><div class="stat-val violet">${s.taux_ouverture}%</div></div>
+          <div class="stat-card"><div class="stat-label">Taux de réponse</div><div class="stat-val green">${s.taux_reponse}%</div></div>
+        </div>
+      </div>
+    `;
+  }
+  el.innerHTML = html;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadGlobalStats();
+loadFiltersOptions();
+loadProspects();
+</script>
+
+</body>
+</html>
