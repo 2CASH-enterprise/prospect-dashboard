@@ -275,6 +275,75 @@ def demarrer_campagne(campagne_id: int, db: Session = Depends(get_db)):
     return resultat
 
 
+@app.post("/api/campagnes/{campagne_id}/lancer-whatsapp")
+def demarrer_campagne_whatsapp(campagne_id: int, db: Session = Depends(get_db)):
+    """
+    Lance la campagne via WhatsApp au lieu d'email.
+    Envoie le template 'j0' à tous les prospects correspondants ayant
+    un numéro WhatsApp ou téléphone, et qui n'ont pas encore été contactés.
+    """
+    from whatsapp_sender import send_campaign_step_whatsapp
+
+    campagne = db.query(Campagne).filter(Campagne.id == campagne_id).first()
+    if not campagne:
+        raise HTTPException(404, "Campagne introuvable")
+
+    query = db.query(Prospect).filter(
+        Prospect.metier == campagne.metier,
+        Prospect.statut == "nouveau",
+    )
+    if campagne.ville_filtre:
+        query = query.filter(Prospect.ville == campagne.ville_filtre)
+
+    prospects = [p for p in query.all() if p.whatsapp or p.telephone]
+
+    nb_envoyes = 0
+    nb_echecs = 0
+    erreurs = []
+
+    for prospect in prospects:
+        cp = CampagneProspect(
+            campagne_id=campagne.id,
+            prospect_id=prospect.id,
+            etape_actuelle="j0",
+        )
+        db.add(cp)
+        db.flush()
+
+        succes, resultat = send_campaign_step_whatsapp(prospect, "j0")
+
+        log = EmailLog(
+            prospect_id=prospect.id,
+            campagne_id=campagne.id,
+            etape="j0",
+            sujet=f"[WhatsApp] {campagne.nom}",
+            statut_envoi="succes" if succes else "echec",
+            erreur=None if succes else resultat,
+        )
+        db.add(log)
+
+        if succes:
+            cp.date_j0_envoye = datetime.utcnow()
+            prospect.statut = "en_campagne"
+            prospect.date_derniere_action = datetime.utcnow()
+            nb_envoyes += 1
+        else:
+            nb_echecs += 1
+            erreurs.append(f"{prospect.nom} : {resultat}")
+
+    campagne.statut = "active"
+    campagne.date_lancement = datetime.utcnow()
+    db.commit()
+
+    return {
+        "canal": "whatsapp",
+        "prospects_eligibles": len(prospects),
+        "envoyes": nb_envoyes,
+        "echecs": nb_echecs,
+        "detail_erreurs": erreurs[:10],
+    }
+
+
 @app.get("/api/campagnes/{campagne_id}/stats")
 def stats_campagne(campagne_id: int, db: Session = Depends(get_db)):
     total = db.query(CampagneProspect).filter(CampagneProspect.campagne_id == campagne_id).count()
