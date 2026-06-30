@@ -114,35 +114,58 @@ async def importer_csv(
 
     nb_importes = 0
     nb_doublons = 0
+    nb_erreurs = 0
+    erreurs_detail = []
 
-    for row in reader:
-        place_id = row.get("place_id", "")
+    for i, row in enumerate(reader, start=2):  # ligne 2 = première ligne de données
+        try:
+            place_id = (row.get("place_id") or "").strip()
+            nom = (row.get("nom") or row.get("name") or row.get("title") or "").strip()
 
-        if place_id:
-            existe = db.query(Prospect).filter(Prospect.place_id == place_id).first()
-            if existe:
-                nb_doublons += 1
+            if not nom:
+                nb_erreurs += 1
+                erreurs_detail.append(f"Ligne {i} : nom manquant, ignorée")
                 continue
 
-        prospect = Prospect(
-            nom=row.get("nom") or row.get("name", ""),
-            metier=metier,
-            ville=row.get("ville", ""),
-            adresse=row.get("adresse") or row.get("address", ""),
-            telephone=row.get("telephone") or row.get("phone", ""),
-            whatsapp=row.get("whatsapp", ""),
-            email=row.get("email", ""),
-            site_web=row.get("site_web") or row.get("website", ""),
-            note=float(row["note"]) if row.get("note") else None,
-            nb_avis=int(row["nb_avis"]) if row.get("nb_avis") else None,
-            google_maps_url=row.get("google_maps", ""),
-            place_id=place_id,
-        )
-        db.add(prospect)
-        nb_importes += 1
+            if place_id:
+                existe = db.query(Prospect).filter(Prospect.place_id == place_id).first()
+                if existe:
+                    nb_doublons += 1
+                    continue
+            else:
+                place_id = None  # NULL plutôt que '' pour éviter les collisions d'unicité
+
+            prospect = Prospect(
+                nom=nom,
+                metier=metier,
+                ville=row.get("ville", ""),
+                adresse=row.get("adresse") or row.get("address", ""),
+                telephone=row.get("telephone") or row.get("phone", ""),
+                whatsapp=row.get("whatsapp", ""),
+                email=row.get("email", ""),
+                site_web=row.get("site_web") or row.get("website", ""),
+                note=float(row["note"]) if row.get("note") else None,
+                nb_avis=int(row["nb_avis"]) if row.get("nb_avis") else None,
+                google_maps_url=row.get("google_maps", ""),
+                place_id=place_id,
+            )
+            db.add(prospect)
+            db.flush()
+            nb_importes += 1
+
+        except Exception as e:
+            db.rollback()
+            nb_erreurs += 1
+            erreurs_detail.append(f"Ligne {i} : {str(e)}")
+            continue
 
     db.commit()
-    return {"importes": nb_importes, "doublons_ignores": nb_doublons}
+    return {
+        "importes": nb_importes,
+        "doublons_ignores": nb_doublons,
+        "erreurs": nb_erreurs,
+        "detail_erreurs": erreurs_detail[:10],
+    }
 
 
 @app.delete("/api/prospects/{prospect_id}")
